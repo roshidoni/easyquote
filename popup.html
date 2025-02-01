@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quote Maker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Quote Maker</h2>
+    <div class="format-selector">
+      <label>
+        <input type="radio" name="format" value="square" checked> Square
+      </label>
+      <label>
+        <input type="radio" name="format" value="vertical"> Vertical
+      </label>
+    </div>
+    <div class="input-group">
+      <textarea id="quote" placeholder="Enter your quote"></textarea>
+    </div>
+    <div class="input-group">
+      <input type="text" id="author" placeholder="Author name">
+    </div>
+    <div class="input-group">
+      <input type="text" id="url" placeholder="URL (auto-detected)" readonly>
+    </div>
+    <button id="generate">Generate Quote Image</button>
+    <div id="result" class="hidden">
+      <canvas id="quoteCanvas"></canvas>
+      <button id="download">Download Image</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html> 
