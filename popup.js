@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     quoteUrl: document.getElementById('quoteUrl'),
     urlInput: document.getElementById('url'),
     quoteInput: document.getElementById('quote'),
-    authorInput: document.getElementById('author'),
     wordCount: document.getElementById('wordCount'),
     statusMessage: document.getElementById('status'),
     formatInputs: document.querySelectorAll('input[name="format"]'),
@@ -18,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   let currentQuoteIcon = null;
+  let currentAuthor = '';
 
   // --- Constants ---
   const WORD_LIMITS = { square: 60, vertical: 75 };
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderQuoteCard() {
     const quoteText = UI.quoteInput.value.trim();
-    const authorName = UI.authorInput.value.trim();
+    const authorName = currentAuthor.trim();
     const sourceUrl = UI.urlInput.value;
     const cardFormat = getSelectedCardFormat();
     const isVerticalFormat = cardFormat === 'vertical';
@@ -263,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
   UI.downloadBtn.addEventListener('click', handleDownloadClick);
   UI.copyBtn.addEventListener('click', handleCopyClick);
   UI.quoteInput.addEventListener('input', onQuoteInputChange);
-  UI.authorInput.addEventListener('input', onQuoteInputChange);
 
   UI.formatInputs.forEach(radio => {
     radio.addEventListener('change', () => {
@@ -278,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load data from storage (context menu)
   chrome.storage.local.get(['selectedQuote', 'selectedAuthor'], (data) => {
     if (data.selectedQuote) UI.quoteInput.value = data.selectedQuote;
-    if (data.selectedAuthor) UI.authorInput.value = data.selectedAuthor;
+    if (data.selectedAuthor !== undefined) currentAuthor = data.selectedAuthor || '';
 
     if (data.selectedQuote || data.selectedAuthor) {
       onQuoteInputChange();
@@ -309,9 +308,9 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.quoteInput.value = selectedText;
         hasNewData = true;
       }
-      if (author) {
-        UI.authorInput.value = author;
-        hasNewData = true;
+      if (author !== undefined) {
+        currentAuthor = author || '';
+        hasNewData = Boolean(author);
       }
 
       if (hasNewData) onQuoteInputChange();
