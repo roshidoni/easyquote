@@ -3,7 +3,12 @@
   "name": "Quote Maker",
   "version": "1.0",
   "description": "Generate beautiful quote images with author and URL",
-  "permissions": ["activeTab", "tabs", "contextMenus", "storage", "scripting"],
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "storage",
+    "scripting"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -17,13 +22,7 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
-  ],
   "background": {
     "service_worker": "background.js"
   }
-} 
+}

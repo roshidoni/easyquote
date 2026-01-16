@@ -32,12 +32,27 @@ function getAuthorFromMeta() {
   return null;
 }
 
+function getFavicon() {
+  const link = document.querySelector("link[rel*='icon']") || document.querySelector("link[rel='shortcut icon']");
+  if (link) {
+    const href = link.getAttribute('href');
+    if (href) {
+      if (href.startsWith('/')) {
+        return window.location.origin + href;
+      }
+      return link.href; // Returns absolute URL property
+    }
+  }
+  return null;
+}
+
 // Listen for messages from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getSelection") {
-    sendResponse({ 
+    sendResponse({
       selectedText: window.getSelection().toString(),
-      author: getAuthorFromMeta()
+      author: getAuthorFromMeta(),
+      icon: getFavicon()
     });
   }
   return true; // Required for async response

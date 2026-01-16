@@ -1,160 +1,319 @@
-document.addEventListener('DOMContentLoaded', function() {
-  const generateBtn = document.getElementById('generate');
-  const downloadBtn = document.getElementById('download');
-  const resultDiv = document.getElementById('result');
-  const canvas = document.getElementById('quoteCanvas');
-  const ctx = canvas.getContext('2d');
-  const urlInput = document.getElementById('url');
-  const quoteInput = document.getElementById('quote');
-  const authorInput = document.getElementById('author');
+document.addEventListener('DOMContentLoaded', () => {
+  // --- DOM Elements ---
+  const UI = {
+    downloadBtn: document.getElementById('download'),
+    copyBtn: document.getElementById('copy'),
+    resultDiv: document.getElementById('result'),
+    quoteCard: document.getElementById('quoteCard'),
+    quoteText: document.getElementById('quoteText'),
+    quoteAuthor: document.getElementById('quoteAuthor'),
+    quoteUrl: document.getElementById('quoteUrl'),
+    urlInput: document.getElementById('url'),
+    quoteInput: document.getElementById('quote'),
+    authorInput: document.getElementById('author'),
+    wordCount: document.getElementById('wordCount'),
+    statusMessage: document.getElementById('status'),
+    formatInputs: document.querySelectorAll('input[name="format"]'),
+    quoteIcon: document.getElementById('quoteIcon'),
+  };
 
-  // Get current tab URL and author
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    const currentTab = tabs[0];
-    urlInput.value = currentTab.url;
+  let currentQuoteIcon = null;
 
-    // Try to execute content script to get selection and author
-    chrome.scripting.executeScript({
-      target: { tabId: currentTab.id },
-      function: () => {
-        const getAuthorFromMeta = () => {
-          const authorSelectors = [
-            'meta[name="author"]',
-            'meta[property="article:author"]',
-            'meta[property="og:article:author"]',
-            'meta[name="twitter:creator"]',
-            'meta[property="dc:creator"]'
-          ];
+  // --- Constants ---
+  const WORD_LIMITS = { square: 60, vertical: 75 };
 
-          for (let selector of authorSelectors) {
-            const metaTag = document.querySelector(selector);
-            if (metaTag && metaTag.content) {
-              return metaTag.content.trim();
-            }
-          }
-          return null;
-        };
+  const countWords = (text) => text.split(/\s+/).filter(w => w.length > 0).length;
 
-        return {
-          selectedText: window.getSelection().toString(),
-          author: getAuthorFromMeta()
-        };
-      }
-    }).then((injectionResults) => {
-      if (injectionResults && injectionResults[0].result) {
-        const { selectedText, author } = injectionResults[0].result;
-        if (selectedText) {
-          quoteInput.value = selectedText.trim();
-        }
-        if (author) {
-          authorInput.value = author;
-        }
-      }
-    }).catch(console.log);
-  });
+  const extractDomain = (url) => url.replace(/^(https?:\/\/)?(www\.)?/i, '');
 
-  generateBtn.addEventListener('click', generateQuoteImage);
-  downloadBtn.addEventListener('click', downloadImage);
+  function truncateTextByWordLimit(text, maxWords) {
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    return words.length <= maxWords ? text : words.slice(0, maxWords).join(' ') + '...';
+  }
 
-  // Update canvas preview size based on format
-  document.querySelectorAll('input[name="format"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-      canvas.style.aspectRatio = this.value === 'square' ? '1 / 1' : '2 / 3';
-    });
-  });
+  function calculateQuoteTextSize(wordCount, isVerticalFormat) {
+    const base = 23;
+    const modeMultiplier = isVerticalFormat ? 5 : 4;
+    const value = (modeMultiplier - (Math.floor((wordCount - 1) / 15) + 1)) * 2;
+    const fontSize = base + value;
+    const lineHeight = isVerticalFormat ? 1.55 : 1.5;
+    console.log(`fontSize: ${fontSize}, wordCount: ${wordCount}, value: ${value}`);
+    return { fontSize, lineHeight: lineHeight.toFixed(2) };
+  }
 
-  function generateQuoteImage() {
-    const quote = quoteInput.value;
-    const author = authorInput.value;
-    const url = urlInput.value;
-    const format = document.querySelector('input[name="format"]:checked').value;
+  // --- Core Logic ---
+  function getSelectedCardFormat() {
+    return document.querySelector('input[name="format"]:checked').value;
+  }
 
-    if (!quote || !author) {
-      alert('Please enter both quote and author');
+  function getCurrentWordLimit() {
+    return WORD_LIMITS[getSelectedCardFormat()];
+  }
+
+  function updateWordCountDisplay() {
+    const inputText = UI.quoteInput.value.trim();
+    const wordCount = countWords(inputText);
+    const wordLimit = getCurrentWordLimit();
+
+    if (inputText.length === 0) {
+      UI.wordCount.classList.add('hidden');
       return;
     }
 
-    // Set canvas size based on format
-    if (format === 'square') {
-      canvas.width = 800;
-      canvas.height = 800;
+    UI.wordCount.classList.remove('hidden');
+    UI.wordCount.textContent = `${wordCount} / ${wordLimit} words`;
+
+    // Reset warning classes
+    UI.wordCount.classList.remove('warning', 'limit');
+
+    if (wordCount > wordLimit) {
+      UI.wordCount.classList.add('limit');
+    } else if (wordCount > wordLimit * 0.8) {
+      UI.wordCount.classList.add('warning');
+    }
+  }
+
+  function renderQuoteCard() {
+    const quoteText = UI.quoteInput.value;
+    const authorName = UI.authorInput.value;
+    const sourceUrl = UI.urlInput.value;
+    const cardFormat = getSelectedCardFormat();
+    const isVerticalFormat = cardFormat === 'vertical';
+
+    if (!quoteText || !authorName) {
+      resetQuoteCard();
+      return;
+    }
+
+    // Apply Content
+    const wordLimit = getCurrentWordLimit();
+    const truncatedQuote = truncateTextByWordLimit(quoteText, wordLimit);
+
+    // Apply Styles
+    UI.quoteCard.classList.toggle('vertical', isVerticalFormat);
+    UI.quoteCard.classList.toggle('square', !isVerticalFormat);
+
+    const { fontSize, lineHeight } = calculateQuoteTextSize(countWords(truncatedQuote), isVerticalFormat);
+    UI.quoteText.style.fontSize = `${fontSize}px`;
+    UI.quoteText.style.lineHeight = `${lineHeight}`;
+
+    UI.quoteText.textContent = truncatedQuote;
+    UI.quoteAuthor.textContent = authorName;
+    UI.quoteUrl.textContent = sourceUrl ? extractDomain(sourceUrl) : '';
+
+    // Render Icon
+    console.log('Site Icon URL:', currentQuoteIcon);
+    UI.quoteIcon.innerHTML = '';
+    if (currentQuoteIcon) {
+      const img = document.createElement('img');
+      img.src = currentQuoteIcon;
+      img.alt = '';
+      UI.quoteIcon.appendChild(img);
+    }
+
+    // Show Result
+    UI.resultDiv.classList.remove('hidden');
+    UI.downloadBtn.disabled = false;
+    UI.copyBtn.disabled = false;
+  }
+
+  function resetQuoteCard() {
+    UI.quoteText.textContent = '';
+    UI.quoteAuthor.textContent = '';
+    UI.quoteUrl.textContent = '';
+    UI.quoteIcon.innerHTML = '';
+    UI.resultDiv.classList.add('hidden');
+    UI.downloadBtn.disabled = true;
+    UI.copyBtn.disabled = true;
+  }
+
+  function onQuoteInputChange() {
+    updateWordCountDisplay();
+
+    const hasQuoteText = UI.quoteInput.value.trim().length > 0;
+    const hasAuthorName = UI.authorInput.value.trim().length > 0;
+
+    if (hasQuoteText && hasAuthorName) {
+      renderQuoteCard();
+    } else if (!hasQuoteText) {
+      resetQuoteCard();
+    }
+  }
+
+  // --- Actions ---
+  async function renderQuoteToCanvas(scaleFactor) {
+    if (!UI.quoteInput.value.trim() || !UI.authorInput.value.trim()) {
+      displayStatusMessage('Add a quote and author first.', true);
+      return null;
+    }
+    if (typeof html2canvas !== 'function') {
+      displayStatusMessage('Library not loaded. Please reload.', true);
+      return null;
+    }
+
+    try {
+      const canvas = await html2canvas(UI.quoteCard, {
+        backgroundColor: null,
+        scale: scaleFactor,
+        useCORS: true,
+        allowTaint: true,
+      });
+      return canvas;
+    } catch (error) {
+      console.error('Canvas rendering error:', error);
+      displayStatusMessage('Failed to generate image.', true);
+      return null;
+    }
+  }
+
+  async function handleDownloadClick() {
+    setButtonLoadingState(UI.downloadBtn, true);
+    const canvas = await renderQuoteToCanvas(2); // Scale 2 for download
+
+    if (canvas) {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          displayStatusMessage('Could not create image blob.', true);
+          setButtonLoadingState(UI.downloadBtn, false);
+          return;
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.download = 'bluequote.jpeg';
+        downloadLink.href = blobUrl;
+        downloadLink.click();
+        URL.revokeObjectURL(blobUrl);
+
+        showButtonSuccessState(UI.downloadBtn);
+        setButtonLoadingState(UI.downloadBtn, false);
+      }, 'image/jpeg');
     } else {
-      canvas.width = 1080;
-      canvas.height = 1920;
+      setButtonLoadingState(UI.downloadBtn, false);
     }
-
-    // Fill with black background first
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Create background with blur effect
-    ctx.filter = 'blur(10px)';
-    
-    // Draw some dark gray shapes that will be blurred
-    for (let i = 0; i < 5; i++) {
-      // Using dark grays with low opacity for subtle effect
-      ctx.fillStyle = `rgba(60, 60, 60, 0.6)`;
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      const size = Math.random() * 400 + 200;
-      
-      ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Reset blur for text
-    ctx.filter = 'none';
-    ctx.textAlign = 'center';
-    
-    // Calculate positions
-    const startY = format === 'square' ? canvas.height * 0.35 : canvas.height * 0.35;
-    const authorY = format === 'square' ? canvas.height * 0.65 : canvas.height * 0.65;
-    const urlY = format === 'square' ? canvas.height * 0.75 : canvas.height * 0.75;
-    const maxWidth = format === 'square' ? canvas.width - 100 : canvas.width - 160;
-    
-    // Draw quote
-    ctx.fillStyle = '#ffffff';
-    ctx.font = format === 'square' ? 'bold 32px Arial' : 'bold 48px Arial';
-    wrapText(ctx, `"${quote}"`, canvas.width/2, startY, maxWidth, format === 'square' ? 40 : 60);
-
-    // Draw author
-    ctx.font = format === 'square' ? '24px Arial' : '36px Arial';
-    ctx.fillText(`- ${author}`, canvas.width/2, authorY);
-
-    // Draw URL if provided
-    if (url) {
-      ctx.font = format === 'square' ? '18px Arial' : '28px Arial';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.fillText(url, canvas.width/2, urlY);
-    }
-
-    resultDiv.classList.remove('hidden');
   }
 
-  function wrapText(context, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(' ');
-    let line = '';
+  async function handleCopyClick() {
+    setButtonLoadingState(UI.copyBtn, true);
+    const canvas = await renderQuoteToCanvas(3); // Scale 3 for sharper copy/paste
 
-    for(let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      const metrics = context.measureText(testLine);
-      
-      if (metrics.width > maxWidth && n > 0) {
-        context.fillText(line, x, y);
-        line = words[n] + ' ';
-        y += lineHeight;
-      } else {
-        line = testLine;
+    if (canvas) {
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setButtonLoadingState(UI.copyBtn, false);
+          return;
+        }
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/jpg': blob })
+          ]);
+          showButtonSuccessState(UI.copyBtn, 'Copied!');
+        } catch (err) {
+          displayStatusMessage('Copy failed. Try downloading instead.', true);
+        }
+        setButtonLoadingState(UI.copyBtn, false);
+      }, 'image/jpg');
+    } else {
+      setButtonLoadingState(UI.copyBtn, false);
+    }
+  }
+
+  // --- UI Feedback ---
+  function setButtonLoadingState(button, isLoading) {
+    const buttonText = button.querySelector('.btn-text');
+    const buttonIcon = button.querySelector('.icon');
+
+    button.disabled = isLoading;
+    if (isLoading) {
+      if (buttonIcon) buttonIcon.style.display = 'none';
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      button.insertBefore(spinner, buttonText);
+    } else {
+      const spinner = button.querySelector('.spinner');
+      if (spinner) spinner.remove();
+      if (buttonIcon) buttonIcon.style.display = '';
+    }
+  }
+
+  function showButtonSuccessState(button, message = 'Done!') {
+    const buttonText = button.querySelector('.btn-text');
+    const originalText = buttonText.textContent;
+
+    button.classList.add('success');
+    buttonText.textContent = message;
+
+    setTimeout(() => {
+      button.classList.remove('success');
+      buttonText.textContent = originalText;
+    }, 1500);
+  }
+
+  function displayStatusMessage(message, isError = false) {
+    UI.statusMessage.textContent = message;
+    UI.statusMessage.classList.toggle('hidden', !message);
+    UI.statusMessage.classList.toggle('error', isError);
+
+    if (message) {
+      setTimeout(() => UI.statusMessage.classList.add('hidden'), 4000);
+    }
+  }
+
+  // --- Event Listeners ---
+  UI.downloadBtn.addEventListener('click', handleDownloadClick);
+  UI.copyBtn.addEventListener('click', handleCopyClick);
+  UI.quoteInput.addEventListener('input', onQuoteInputChange);
+  UI.authorInput.addEventListener('input', onQuoteInputChange);
+
+  UI.formatInputs.forEach(radio => {
+    radio.addEventListener('change', () => {
+      updateWordCountDisplay();
+      if (!UI.resultDiv.classList.contains('hidden')) {
+        renderQuoteCard();
       }
-    }
-    context.fillText(line, x, y);
-  }
+    });
+  });
 
-  function downloadImage() {
-    const link = document.createElement('a');
-    link.download = 'quote.png';
-    link.href = canvas.toDataURL();
-    link.click();
-  }
-}); 
+  // --- Initialization ---
+  // Load data from storage (context menu)
+  chrome.storage.local.get(['selectedQuote', 'selectedAuthor'], (data) => {
+    if (data.selectedQuote) UI.quoteInput.value = data.selectedQuote;
+    if (data.selectedAuthor) UI.authorInput.value = data.selectedAuthor;
+
+    if (data.selectedQuote || data.selectedAuthor) {
+      onQuoteInputChange();
+      chrome.storage.local.remove(['selectedQuote', 'selectedAuthor']);
+    }
+  });
+
+  // Load data from current tab
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0]) return;
+    UI.urlInput.value = tabs[0].url;
+
+    // Direct favicon retrieval from tab property
+    if (tabs[0].favIconUrl) {
+      currentQuoteIcon = tabs[0].favIconUrl;
+      console.log('Favicon URL from tab:', currentQuoteIcon);
+    }
+
+    onQuoteInputChange();
+
+    chrome.runtime.sendMessage({ action: 'getPageContext' }, (response) => {
+      if (chrome.runtime.lastError) return;
+
+      const { selectedText, author } = response || {};
+      let hasNewData = false;
+
+      if (selectedText) {
+        UI.quoteInput.value = selectedText;
+        hasNewData = true;
+      }
+      if (author) {
+        UI.authorInput.value = author;
+        hasNewData = true;
+      }
+
+      if (hasNewData) onQuoteInputChange();
+    });
+  });
+});
