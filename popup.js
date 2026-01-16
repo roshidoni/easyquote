@@ -74,13 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderQuoteCard() {
-    const quoteText = UI.quoteInput.value;
-    const authorName = UI.authorInput.value;
+    const quoteText = UI.quoteInput.value.trim();
+    const authorName = UI.authorInput.value.trim();
     const sourceUrl = UI.urlInput.value;
     const cardFormat = getSelectedCardFormat();
     const isVerticalFormat = cardFormat === 'vertical';
 
-    if (!quoteText || !authorName) {
+    if (!quoteText) {
       resetQuoteCard();
       return;
     }
@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     UI.quoteText.textContent = truncatedQuote;
     UI.quoteAuthor.textContent = authorName;
+    UI.quoteAuthor.classList.toggle('hidden', !authorName);
     UI.quoteUrl.textContent = sourceUrl ? extractDomain(sourceUrl) : '';
 
     // Render Icon
@@ -120,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetQuoteCard() {
     UI.quoteText.textContent = '';
     UI.quoteAuthor.textContent = '';
+    UI.quoteAuthor.classList.add('hidden');
     UI.quoteUrl.textContent = '';
     UI.quoteIcon.innerHTML = '';
     UI.resultDiv.classList.add('hidden');
@@ -131,19 +133,18 @@ document.addEventListener('DOMContentLoaded', () => {
     updateWordCountDisplay();
 
     const hasQuoteText = UI.quoteInput.value.trim().length > 0;
-    const hasAuthorName = UI.authorInput.value.trim().length > 0;
 
-    if (hasQuoteText && hasAuthorName) {
+    if (hasQuoteText) {
       renderQuoteCard();
-    } else if (!hasQuoteText) {
+    } else {
       resetQuoteCard();
     }
   }
 
   // --- Actions ---
   async function renderQuoteToCanvas(scaleFactor) {
-    if (!UI.quoteInput.value.trim() || !UI.authorInput.value.trim()) {
-      displayStatusMessage('Add a quote and author first.', true);
+    if (!UI.quoteInput.value.trim()) {
+      displayStatusMessage('Add a quote first.', true);
       return null;
     }
     if (typeof html2canvas !== 'function') {
