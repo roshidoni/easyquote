@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     quoteText: document.getElementById('quoteText'),
     quoteAuthor: document.getElementById('quoteAuthor'),
     quoteUrl: document.getElementById('quoteUrl'),
-    urlInput: document.getElementById('url'),
     quoteInput: document.getElementById('quote'),
     wordCount: document.getElementById('wordCount'),
     statusMessage: document.getElementById('status'),
@@ -18,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentQuoteIcon = null;
   let currentAuthor = '';
+  let currentUrl = '';
 
   // --- Constants ---
   const WORD_LIMITS = { square: 60, vertical: 75 };
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderQuoteCard() {
     const quoteText = UI.quoteInput.value.trim();
     const authorName = currentAuthor.trim();
-    const sourceUrl = UI.urlInput.value;
+    const sourceUrl = currentUrl;
     const cardFormat = getSelectedCardFormat();
     const isVerticalFormat = cardFormat === 'vertical';
 
@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load data from current tab
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs[0]) return;
-    UI.urlInput.value = tabs[0].url;
+    currentUrl = tabs[0].url || '';
 
     // Direct favicon retrieval from tab property
     if (tabs[0].favIconUrl) {
