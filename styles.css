@@ -256,20 +256,34 @@ body {
   aspect-ratio: 4 / 5;
 }
 
-.quote-card::before {
+.quote-card::before,
+.quote-card::after {
   content: "";
   position: absolute;
   inset: 0;
+  pointer-events: none;
+}
+
+.quote-card::before {
   background:
     radial-gradient(ellipse 80% 60% at 20% 10%, rgba(59, 130, 246, 0.2), transparent 50%),
     radial-gradient(ellipse 60% 50% at 80% 90%, rgba(139, 92, 246, 0.15), transparent 50%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.1) 100%);
-  pointer-events: none;
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.35) 45%, rgba(0, 0, 0, 0.55) 100%);
+  z-index: 1;
+}
+
+.quote-card.has-og-bg::after {
+  background-image: var(--og-image);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.9;
+  transform: scale(1.02);
+  z-index: 0;
 }
 
 .quote-inner {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: 100%;
   height: 100%;
   padding: 32px;

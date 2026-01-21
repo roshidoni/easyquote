@@ -16,12 +16,36 @@ function pageContextProbe() {
     'meta[property="dc:creator"]',
   ];
 
+  const getMetaContent = (selector) => {
+    const metaTag = document.querySelector(selector);
+    return metaTag?.content?.trim() || null;
+  };
+
+  const resolveUrl = (rawUrl) => {
+    if (!rawUrl) return null;
+    try {
+      return new URL(rawUrl, document.baseURI).href;
+    } catch (e) {
+      return rawUrl;
+    }
+  };
+
+  const ogImageMetaUrl = resolveUrl(getMetaContent('meta[property="og:image"]'));
+  const twitterImageUrl = resolveUrl(getMetaContent('meta[name="twitter:image"]'));
+  const ogImageUrl = ogImageMetaUrl || twitterImageUrl;
+  const imageContext = {
+    ogImageUrl,
+    ogImageMetaUrl,
+    twitterImageUrl,
+  };
+
   for (const selector of authorSelectors) {
     const metaTag = document.querySelector(selector);
     if (metaTag?.content) {
       return {
         author: metaTag.content.trim(),
-        selectedText: window.getSelection().toString()
+        selectedText: window.getSelection().toString(),
+        ...imageContext,
       };
     }
   }
@@ -32,8 +56,10 @@ function pageContextProbe() {
       const data = JSON.parse(jsonLd.textContent);
       if (data.author) {
         return {
-          author: typeof data.author === "string" ? data.author : data.author.name,
-          selectedText: window.getSelection().toString()
+          author:
+            typeof data.author === "string" ? data.author : data.author.name,
+          selectedText: window.getSelection().toString(),
+          ...imageContext,
         };
       }
     } catch (e) {
@@ -43,7 +69,8 @@ function pageContextProbe() {
 
   return {
     author: null,
-    selectedText: window.getSelection().toString()
+    selectedText: window.getSelection().toString(),
+    ...imageContext,
   };
 }
 
@@ -58,10 +85,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     })
     .then((injectionResults) => {
       const pageContext = injectionResults?.[0]?.result ?? { author: null };
+      console.log("Quote Maker: image metadata", {
+        ogImage: pageContext.ogImageMetaUrl,
+        twitterImage: pageContext.twitterImageUrl,
+        selectedImage: pageContext.ogImageUrl,
+      });
       chrome.storage.local.set(
         {
           selectedQuote: info.selectionText,
-          selectedAuthor: pageContext.author
+          selectedAuthor: pageContext.author,
+          selectedOgImage: pageContext.ogImageUrl || null,
         },
         () => {
           chrome.action.openPopup();
@@ -86,7 +119,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       func: pageContextProbe,
     })
     .then((injectionResults) => {
-      const pageContext = injectionResults?.[0]?.result ?? { author: null, selectedText: "" };
+      const pageContext = injectionResults?.[0]?.result ?? {
+        author: null,
+        selectedText: "",
+      };
+      console.log("Quote Maker: image metadata", {
+        ogImage: pageContext.ogImageMetaUrl,
+        twitterImage: pageContext.twitterImageUrl,
+        selectedImage: pageContext.ogImageUrl,
+      });
       sendResponse(pageContext);
     })
     .catch((e) => {
@@ -96,4 +137,3 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   return true;
 });
-

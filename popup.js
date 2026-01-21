@@ -1,34 +1,39 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   // --- DOM Elements ---
   const UI = {
-    downloadBtn: document.getElementById('download'),
-    copyBtn: document.getElementById('copy'),
-    resultDiv: document.getElementById('result'),
-    quoteCard: document.getElementById('quoteCard'),
-    quoteText: document.getElementById('quoteText'),
-    quoteAuthor: document.getElementById('quoteAuthor'),
-    quoteUrl: document.getElementById('quoteUrl'),
-    quoteInput: document.getElementById('quote'),
-    wordCount: document.getElementById('wordCount'),
-    statusMessage: document.getElementById('status'),
+    downloadBtn: document.getElementById("download"),
+    copyBtn: document.getElementById("copy"),
+    resultDiv: document.getElementById("result"),
+    quoteCard: document.getElementById("quoteCard"),
+    quoteText: document.getElementById("quoteText"),
+    quoteAuthor: document.getElementById("quoteAuthor"),
+    quoteUrl: document.getElementById("quoteUrl"),
+    quoteInput: document.getElementById("quote"),
+    wordCount: document.getElementById("wordCount"),
+    statusMessage: document.getElementById("status"),
     formatInputs: document.querySelectorAll('input[name="format"]'),
-    quoteIcon: document.getElementById('quoteIcon'),
+    quoteIcon: document.getElementById("quoteIcon"),
   };
 
   let currentQuoteIcon = null;
-  let currentAuthor = '';
-  let currentUrl = '';
+  let currentAuthor = "";
+  let currentUrl = "";
+  let currentOgImage = "";
+  let isSelectionQuote = false;
 
   // --- Constants ---
   const WORD_LIMITS = { square: 60, vertical: 75 };
 
-  const countWords = (text) => text.split(/\s+/).filter(w => w.length > 0).length;
+  const countWords = (text) =>
+    text.split(/\s+/).filter((w) => w.length > 0).length;
 
-  const extractDomain = (url) => url.replace(/^(https?:\/\/)?(www\.)?/i, '');
+  const extractDomain = (url) => url.replace(/^(https?:\/\/)?(www\.)?/i, "");
 
   function truncateTextByWordLimit(text, maxWords) {
-    const words = text.split(/\s+/).filter(w => w.length > 0);
-    return words.length <= maxWords ? text : words.slice(0, maxWords).join(' ') + '...';
+    const words = text.split(/\s+/).filter((w) => w.length > 0);
+    return words.length <= maxWords
+      ? text
+      : words.slice(0, maxWords).join(" ") + "...";
   }
 
   function calculateQuoteTextSize(wordCount, isVerticalFormat) {
@@ -37,7 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const value = (modeMultiplier - (Math.floor((wordCount - 1) / 15) + 1)) * 2;
     const fontSize = base + value;
     const lineHeight = isVerticalFormat ? 1.55 : 1.5;
-    console.log(`fontSize: ${fontSize}, wordCount: ${wordCount}, value: ${value}`);
+    console.log(
+      `fontSize: ${fontSize}, wordCount: ${wordCount}, value: ${value}`,
+    );
     return { fontSize, lineHeight: lineHeight.toFixed(2) };
   }
 
@@ -56,20 +63,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const wordLimit = getCurrentWordLimit();
 
     if (inputText.length === 0) {
-      UI.wordCount.classList.add('hidden');
+      UI.wordCount.classList.add("hidden");
       return;
     }
 
-    UI.wordCount.classList.remove('hidden');
+    UI.wordCount.classList.remove("hidden");
     UI.wordCount.textContent = `${wordCount} / ${wordLimit} words`;
 
     // Reset warning classes
-    UI.wordCount.classList.remove('warning', 'limit');
+    UI.wordCount.classList.remove("warning", "limit");
 
     if (wordCount > wordLimit) {
-      UI.wordCount.classList.add('limit');
+      UI.wordCount.classList.add("limit");
     } else if (wordCount > wordLimit * 0.8) {
-      UI.wordCount.classList.add('warning');
+      UI.wordCount.classList.add("warning");
     }
   }
 
@@ -78,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const authorName = currentAuthor.trim();
     const sourceUrl = currentUrl;
     const cardFormat = getSelectedCardFormat();
-    const isVerticalFormat = cardFormat === 'vertical';
+    const isVerticalFormat = cardFormat === "vertical";
 
     if (!quoteText) {
       resetQuoteCard();
@@ -90,41 +97,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const truncatedQuote = truncateTextByWordLimit(quoteText, wordLimit);
 
     // Apply Styles
-    UI.quoteCard.classList.toggle('vertical', isVerticalFormat);
-    UI.quoteCard.classList.toggle('square', !isVerticalFormat);
+    UI.quoteCard.classList.toggle("vertical", isVerticalFormat);
+    UI.quoteCard.classList.toggle("square", !isVerticalFormat);
 
-    const { fontSize, lineHeight } = calculateQuoteTextSize(countWords(truncatedQuote), isVerticalFormat);
+    const { fontSize, lineHeight } = calculateQuoteTextSize(
+      countWords(truncatedQuote),
+      isVerticalFormat,
+    );
     UI.quoteText.style.fontSize = `${fontSize}px`;
     UI.quoteText.style.lineHeight = `${lineHeight}`;
 
     UI.quoteText.textContent = truncatedQuote;
     UI.quoteAuthor.textContent = authorName;
-    UI.quoteAuthor.classList.toggle('hidden', !authorName);
-    UI.quoteUrl.textContent = sourceUrl ? extractDomain(sourceUrl) : '';
+    UI.quoteAuthor.classList.toggle("hidden", !authorName);
+    UI.quoteUrl.textContent = sourceUrl ? extractDomain(sourceUrl) : "";
 
     // Render Icon
-    console.log('Site Icon URL:', currentQuoteIcon);
-    UI.quoteIcon.innerHTML = '';
+    console.log("Site Icon URL:", currentQuoteIcon);
+    UI.quoteIcon.innerHTML = "";
     if (currentQuoteIcon) {
-      const img = document.createElement('img');
+      const img = document.createElement("img");
       img.src = currentQuoteIcon;
-      img.alt = '';
+      img.alt = "";
       UI.quoteIcon.appendChild(img);
     }
 
+    // Apply OG background (selection only)
+    const hasOgBackground = isSelectionQuote && currentOgImage;
+    console.log(currentOgImage);
+    UI.quoteCard.classList.toggle("has-og-bg", hasOgBackground);
+    if (hasOgBackground) {
+      UI.quoteCard.style.setProperty("--og-image", `url("${currentOgImage}")`);
+    } else {
+      UI.quoteCard.style.removeProperty("--og-image");
+    }
+
     // Show Result
-    UI.resultDiv.classList.remove('hidden');
+    UI.resultDiv.classList.remove("hidden");
     UI.downloadBtn.disabled = false;
     UI.copyBtn.disabled = false;
   }
 
   function resetQuoteCard() {
-    UI.quoteText.textContent = '';
-    UI.quoteAuthor.textContent = '';
-    UI.quoteAuthor.classList.add('hidden');
-    UI.quoteUrl.textContent = '';
-    UI.quoteIcon.innerHTML = '';
-    UI.resultDiv.classList.add('hidden');
+    UI.quoteText.textContent = "";
+    UI.quoteAuthor.textContent = "";
+    UI.quoteAuthor.classList.add("hidden");
+    UI.quoteUrl.textContent = "";
+    UI.quoteIcon.innerHTML = "";
+    UI.quoteCard.classList.remove("has-og-bg");
+    UI.quoteCard.style.removeProperty("--og-image");
+    currentOgImage = "";
+    isSelectionQuote = false;
+    UI.resultDiv.classList.add("hidden");
     UI.downloadBtn.disabled = true;
     UI.copyBtn.disabled = true;
   }
@@ -144,11 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Actions ---
   async function renderQuoteToCanvas(scaleFactor) {
     if (!UI.quoteInput.value.trim()) {
-      displayStatusMessage('Add a quote first.', true);
+      displayStatusMessage("Add a quote first.", true);
       return null;
     }
-    if (typeof html2canvas !== 'function') {
-      displayStatusMessage('Library not loaded. Please reload.', true);
+    if (typeof html2canvas !== "function") {
+      displayStatusMessage("Library not loaded. Please reload.", true);
       return null;
     }
 
@@ -161,8 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       return canvas;
     } catch (error) {
-      console.error('Canvas rendering error:', error);
-      displayStatusMessage('Failed to generate image.', true);
+      console.error("Canvas rendering error:", error);
+      displayStatusMessage("Failed to generate image.", true);
       return null;
     }
   }
@@ -174,20 +198,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (canvas) {
       canvas.toBlob((blob) => {
         if (!blob) {
-          displayStatusMessage('Could not create image blob.', true);
+          displayStatusMessage("Could not create image blob.", true);
           setButtonLoadingState(UI.downloadBtn, false);
           return;
         }
         const blobUrl = URL.createObjectURL(blob);
-        const downloadLink = document.createElement('a');
-        downloadLink.download = 'bluequote.jpeg';
+        const downloadLink = document.createElement("a");
+        downloadLink.download = "bluequote.jpeg";
         downloadLink.href = blobUrl;
         downloadLink.click();
         URL.revokeObjectURL(blobUrl);
 
         showButtonSuccessState(UI.downloadBtn);
         setButtonLoadingState(UI.downloadBtn, false);
-      }, 'image/jpeg');
+      }, "image/jpeg");
     } else {
       setButtonLoadingState(UI.downloadBtn, false);
     }
@@ -205,14 +229,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         try {
           await navigator.clipboard.write([
-            new ClipboardItem({ 'image/jpg': blob })
+            new ClipboardItem({ "image/png": blob }),
           ]);
-          showButtonSuccessState(UI.copyBtn, 'Copied!');
+          showButtonSuccessState(UI.copyBtn, "Copied!");
         } catch (err) {
-          displayStatusMessage('Copy failed. Try downloading instead.', true);
+          displayStatusMessage("Copy failed. Try downloading instead.", true);
         }
         setButtonLoadingState(UI.copyBtn, false);
-      }, 'image/jpg');
+      }, "image/png");
     } else {
       setButtonLoadingState(UI.copyBtn, false);
     }
@@ -220,54 +244,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- UI Feedback ---
   function setButtonLoadingState(button, isLoading) {
-    const buttonText = button.querySelector('.btn-text');
-    const buttonIcon = button.querySelector('.icon');
+    const buttonText = button.querySelector(".btn-text");
+    const buttonIcon = button.querySelector(".icon");
 
     button.disabled = isLoading;
     if (isLoading) {
-      if (buttonIcon) buttonIcon.style.display = 'none';
-      const spinner = document.createElement('div');
-      spinner.className = 'spinner';
+      if (buttonIcon) buttonIcon.style.display = "none";
+      const spinner = document.createElement("div");
+      spinner.className = "spinner";
       button.insertBefore(spinner, buttonText);
     } else {
-      const spinner = button.querySelector('.spinner');
+      const spinner = button.querySelector(".spinner");
       if (spinner) spinner.remove();
-      if (buttonIcon) buttonIcon.style.display = '';
+      if (buttonIcon) buttonIcon.style.display = "";
     }
   }
 
-  function showButtonSuccessState(button, message = 'Done!') {
-    const buttonText = button.querySelector('.btn-text');
+  function showButtonSuccessState(button, message = "Done!") {
+    const buttonText = button.querySelector(".btn-text");
     const originalText = buttonText.textContent;
 
-    button.classList.add('success');
+    button.classList.add("success");
     buttonText.textContent = message;
 
     setTimeout(() => {
-      button.classList.remove('success');
+      button.classList.remove("success");
       buttonText.textContent = originalText;
     }, 1500);
   }
 
   function displayStatusMessage(message, isError = false) {
     UI.statusMessage.textContent = message;
-    UI.statusMessage.classList.toggle('hidden', !message);
-    UI.statusMessage.classList.toggle('error', isError);
+    UI.statusMessage.classList.toggle("hidden", !message);
+    UI.statusMessage.classList.toggle("error", isError);
 
     if (message) {
-      setTimeout(() => UI.statusMessage.classList.add('hidden'), 4000);
+      setTimeout(() => UI.statusMessage.classList.add("hidden"), 4000);
     }
   }
 
   // --- Event Listeners ---
-  UI.downloadBtn.addEventListener('click', handleDownloadClick);
-  UI.copyBtn.addEventListener('click', handleCopyClick);
-  UI.quoteInput.addEventListener('input', onQuoteInputChange);
+  UI.downloadBtn.addEventListener("click", handleDownloadClick);
+  UI.copyBtn.addEventListener("click", handleCopyClick);
+  UI.quoteInput.addEventListener("input", onQuoteInputChange);
 
-  UI.formatInputs.forEach(radio => {
-    radio.addEventListener('change', () => {
+  UI.formatInputs.forEach((radio) => {
+    radio.addEventListener("change", () => {
       updateWordCountDisplay();
-      if (!UI.resultDiv.classList.contains('hidden')) {
+      if (!UI.resultDiv.classList.contains("hidden")) {
         renderQuoteCard();
       }
     });
@@ -275,42 +299,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Initialization ---
   // Load data from storage (context menu)
-  chrome.storage.local.get(['selectedQuote', 'selectedAuthor'], (data) => {
-    if (data.selectedQuote) UI.quoteInput.value = data.selectedQuote;
-    if (data.selectedAuthor !== undefined) currentAuthor = data.selectedAuthor || '';
+  chrome.storage.local.get(
+    ["selectedQuote", "selectedAuthor", "selectedOgImage"],
+    (data) => {
+      if (data.selectedQuote) UI.quoteInput.value = data.selectedQuote;
+      if (data.selectedAuthor !== undefined)
+        currentAuthor = data.selectedAuthor || "";
+      if (data.selectedOgImage) currentOgImage = data.selectedOgImage || "";
 
-    if (data.selectedQuote || data.selectedAuthor) {
-      onQuoteInputChange();
-      chrome.storage.local.remove(['selectedQuote', 'selectedAuthor']);
-    }
-  });
+      if (data.selectedQuote || data.selectedAuthor || data.selectedOgImage) {
+        isSelectionQuote = true;
+        onQuoteInputChange();
+        chrome.storage.local.remove([
+          "selectedQuote",
+          "selectedAuthor",
+          "selectedOgImage",
+        ]);
+      }
+    },
+  );
 
   // Load data from current tab
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs[0]) return;
-    currentUrl = tabs[0].url || '';
+    currentUrl = tabs[0].url || "";
 
     // Direct favicon retrieval from tab property
     if (tabs[0].favIconUrl) {
       currentQuoteIcon = tabs[0].favIconUrl;
-      console.log('Favicon URL from tab:', currentQuoteIcon);
+      console.log("Favicon URL from tab:", currentQuoteIcon);
     }
 
     onQuoteInputChange();
 
-    chrome.runtime.sendMessage({ action: 'getPageContext' }, (response) => {
+    chrome.runtime.sendMessage({ action: "getPageContext" }, (response) => {
       if (chrome.runtime.lastError) return;
 
-      const { selectedText, author } = response || {};
+      const { selectedText, author, ogImageUrl } = response || {};
       let hasNewData = false;
 
       if (selectedText) {
         UI.quoteInput.value = selectedText;
+        isSelectionQuote = true;
         hasNewData = true;
       }
       if (author !== undefined) {
-        currentAuthor = author || '';
-        hasNewData = Boolean(author);
+        currentAuthor = author || "";
+        hasNewData = Boolean(author) || hasNewData;
+      }
+      if (ogImageUrl) {
+        currentOgImage = ogImageUrl;
+        hasNewData = true;
       }
 
       if (hasNewData) onQuoteInputChange();
