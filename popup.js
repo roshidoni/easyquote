@@ -13,6 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
     statusMessage: document.getElementById("status"),
     formatInputs: document.querySelectorAll('input[name="format"]'),
     quoteIcon: document.getElementById("quoteIcon"),
+    backgroundToggle: document.getElementById("backgroundToggle"),
+    backgroundButtons: document.querySelectorAll(".bg-toggle-btn"),
   };
 
   let currentQuoteIcon = null;
@@ -20,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentUrl = "";
   let currentOgImage = "";
   let isSelectionQuote = false;
+  let backgroundMode = "dark";
 
   // --- Constants ---
   const WORD_LIMITS = { square: 60, vertical: 75 };
@@ -80,6 +83,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function updateBackgroundToggle() {
+    const hasImageBackground = isSelectionQuote && currentOgImage;
+    if (!hasImageBackground) {
+      backgroundMode = "dark";
+    }
+
+    UI.backgroundButtons.forEach((button) => {
+      const mode = button.dataset.mode;
+      const isImageButton = mode === "image";
+      const shouldHide = isImageButton && !hasImageBackground;
+      button.classList.toggle("hidden", shouldHide);
+      button.setAttribute("aria-pressed", String(mode === backgroundMode));
+    });
+  }
+
   function renderQuoteCard() {
     const quoteText = UI.quoteInput.value.trim();
     const authorName = currentAuthor.trim();
@@ -122,11 +140,12 @@ document.addEventListener("DOMContentLoaded", () => {
       UI.quoteIcon.appendChild(img);
     }
 
-    // Apply OG background (selection only)
-    const hasOgBackground = isSelectionQuote && currentOgImage;
-    console.log(currentOgImage);
-    UI.quoteCard.classList.toggle("has-og-bg", hasOgBackground);
-    if (hasOgBackground) {
+    updateBackgroundToggle();
+
+    const canUseImageBackground = isSelectionQuote && currentOgImage;
+    const useImageBackground = canUseImageBackground && backgroundMode === "image";
+    UI.quoteCard.classList.toggle("has-og-bg", useImageBackground);
+    if (useImageBackground) {
       UI.quoteCard.style.setProperty("--og-image", `url("${currentOgImage}")`);
     } else {
       UI.quoteCard.style.removeProperty("--og-image");
@@ -148,6 +167,8 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.quoteCard.style.removeProperty("--og-image");
     currentOgImage = "";
     isSelectionQuote = false;
+    backgroundMode = "dark";
+    updateBackgroundToggle();
     UI.resultDiv.classList.add("hidden");
     UI.downloadBtn.disabled = true;
     UI.copyBtn.disabled = true;
@@ -297,7 +318,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  UI.backgroundButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.mode;
+      const canUseImageBackground = isSelectionQuote && currentOgImage;
+      if (mode === "image" && !canUseImageBackground) return;
+      backgroundMode = mode;
+      updateBackgroundToggle();
+      if (!UI.resultDiv.classList.contains("hidden")) {
+        renderQuoteCard();
+      }
+    });
+  });
+
   // --- Initialization ---
+  updateBackgroundToggle();
   // Load data from storage (context menu)
   chrome.storage.local.get(
     ["selectedQuote", "selectedAuthor", "selectedOgImage"],
@@ -309,6 +344,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data.selectedQuote || data.selectedAuthor || data.selectedOgImage) {
         isSelectionQuote = true;
+        backgroundMode = "dark";
+        updateBackgroundToggle();
         onQuoteInputChange();
         chrome.storage.local.remove([
           "selectedQuote",
@@ -350,6 +387,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (ogImageUrl) {
         currentOgImage = ogImageUrl;
         hasNewData = true;
+      }
+
+      if (selectedText || ogImageUrl) {
+        backgroundMode = "dark";
+        updateBackgroundToggle();
       }
 
       if (hasNewData) onQuoteInputChange();

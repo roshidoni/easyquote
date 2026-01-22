@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Quote Maker",
+  "name": "EasyQuote",
   "version": "1.0",
   "description": "Generate beautiful quote images with author and URL",
   "permissions": [

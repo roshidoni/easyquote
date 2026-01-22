@@ -1,6 +1,6 @@
-# BlueQuote - Quote Maker Chrome Extension
+# EasyQuote - Quote Card Chrome Extension
 
-A powerful Chrome extension that lets you create beautiful, shareable quote images from any webpage content. Similar to Substack's Restack quote feature, BlueQuote captures selected text and transforms it into visually appealing quote cards with author attribution and source URLs.
+A powerful Chrome extension that lets you create beautiful, shareable quote images from any webpage content. Similar to Substack's Restack quote feature, EasyQuote captures selected text and transforms it into visually appealing quote cards with author attribution and source URLs.
 
 ## Features
 
@@ -16,7 +16,7 @@ A powerful Chrome extension that lets you create beautiful, shareable quote imag
 
 ### Technical Implementation
 
-BlueQuote uses a multi-component architecture:
+EasyQuote uses a multi-component architecture:
 
 1. **Content Script** (`content.js`):
    - Extracts author information from various meta tag formats
@@ -66,15 +66,15 @@ The quote generation uses HTML5 Canvas with:
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/BlueQuote.git
-   cd BlueQuote
+   git clone https://github.com/yourusername/EasyQuote.git
+   cd EasyQuote
    ```
 
 2. Open Chrome and navigate to `chrome://extensions/`
 
 3. Enable "Developer mode" in the top right
 
-4. Click "Load unpacked" and select the BlueQuote folder
+4. Click "Load unpacked" and select the EasyQuote folder
 
 5. The extension will appear in your extensions list and toolbar
 
@@ -90,7 +90,7 @@ The quote generation uses HTML5 Canvas with:
 7. Download your beautiful quote image
 
 ### Method 2: Extension Popup
-1. Click the BlueQuote icon in your toolbar
+1. Click the EasyQuote icon in your toolbar
 2. The current page URL will be auto-detected
 3. Enter or paste your quote text
 4. Add author name (auto-detected when possible)
@@ -99,7 +99,7 @@ The quote generation uses HTML5 Canvas with:
 ## File Structure
 
 ```
-BlueQuote/
+EasyQuote/
 ├── manifest.json          # Extension configuration
 ├── popup.html            # Main popup interface
 ├── popup.js              # Quote generation logic
