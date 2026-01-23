@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentAuthor = "";
   let currentUrl = "";
   let currentOgImage = "";
+  let currentOgImageDataURL = "";
   let isSelectionQuote = false;
   let backgroundMode = "dark";
 
@@ -146,7 +147,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const useImageBackground = canUseImageBackground && backgroundMode === "image";
     UI.quoteCard.classList.toggle("has-og-bg", useImageBackground);
     if (useImageBackground) {
-      UI.quoteCard.style.setProperty("--og-image", `url("${currentOgImage}")`);
+      // Use the data URL if available to avoid CORS issues
+      const imageUrl = currentOgImageDataURL || currentOgImage;
+      UI.quoteCard.style.setProperty("--og-image", `url("${imageUrl}")`);
     } else {
       UI.quoteCard.style.removeProperty("--og-image");
     }
@@ -157,6 +160,23 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.copyBtn.disabled = false;
   }
 
+  // Helper to convert image URL to Data URL (base64)
+  async function convertImageToDataURL(url) {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error("Error converting image to data URL:", error);
+      return null;
+    }
+  }
+
   function resetQuoteCard() {
     UI.quoteText.textContent = "";
     UI.quoteAuthor.textContent = "";
@@ -165,7 +185,9 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.quoteIcon.innerHTML = "";
     UI.quoteCard.classList.remove("has-og-bg");
     UI.quoteCard.style.removeProperty("--og-image");
+    UI.quoteCard.style.removeProperty("--og-image");
     currentOgImage = "";
+    currentOgImageDataURL = "";
     isSelectionQuote = false;
     backgroundMode = "dark";
     updateBackgroundToggle();
@@ -340,7 +362,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.selectedQuote) UI.quoteInput.value = data.selectedQuote;
       if (data.selectedAuthor !== undefined)
         currentAuthor = data.selectedAuthor || "";
-      if (data.selectedOgImage) currentOgImage = data.selectedOgImage || "";
+      if (data.selectedOgImage) {
+        currentOgImage = data.selectedOgImage || "";
+        if (currentOgImage) {
+          convertImageToDataURL(currentOgImage).then((dataUrl) => {
+            currentOgImageDataURL = dataUrl;
+            if (backgroundMode === "image") renderQuoteCard();
+          });
+        }
+      }
 
       if (data.selectedQuote || data.selectedAuthor || data.selectedOgImage) {
         isSelectionQuote = true;
@@ -386,6 +416,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (ogImageUrl) {
         currentOgImage = ogImageUrl;
+        convertImageToDataURL(ogImageUrl).then((dataUrl) => {
+          currentOgImageDataURL = dataUrl;
+          if (backgroundMode === "image") renderQuoteCard();
+        });
         hasNewData = true;
       }
 

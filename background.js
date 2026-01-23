@@ -85,7 +85,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     })
     .then((injectionResults) => {
       const pageContext = injectionResults?.[0]?.result ?? { author: null };
-      console.log("EasyQuote: image metadata", {
+      console.log("BlueQuote: image metadata", {
         ogImage: pageContext.ogImageMetaUrl,
         twitterImage: pageContext.twitterImageUrl,
         selectedImage: pageContext.ogImageUrl,
@@ -101,7 +101,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         },
       );
     })
-    .catch((e) => console.log("EasyQuote: failed to fetch author", e));
+    .catch((e) => console.log("BlueQuote: failed to fetch author", e));
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -123,7 +123,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         author: null,
         selectedText: "",
       };
-      console.log("EasyQuote: image metadata", {
+      console.log("BlueQuote: image metadata", {
         ogImage: pageContext.ogImageMetaUrl,
         twitterImage: pageContext.twitterImageUrl,
         selectedImage: pageContext.ogImageUrl,
@@ -131,7 +131,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse(pageContext);
     })
     .catch((e) => {
-      console.log("EasyQuote: failed to probe page", e);
+      console.log("BlueQuote: failed to probe page", e);
       sendResponse({ author: null, selectedText: "" });
     });
 
