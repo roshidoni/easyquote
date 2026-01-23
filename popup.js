@@ -49,7 +49,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- Core Logic ---
+
+  /**
+   * @returns {"vertical" | "square"}
+   */
   function getSelectedCardFormat() {
+    // Get checked input value: square | vertical
     return document.querySelector('input[name="format"]:checked').value;
   }
 
@@ -70,7 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.wordCount.classList.remove("hidden");
     UI.wordCount.textContent = `${wordCount} / ${wordLimit} words`;
 
-    // Reset warning classes
+    updateWordLimitIndicator(wordCount, wordLimit);
+  }
+
+  function updateWordLimitIndicator(wordCount, wordLimit) {
     UI.wordCount.classList.remove("warning", "limit");
 
     if (wordCount > wordLimit) {
@@ -178,7 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.quoteUrl.textContent = "";
     UI.quoteIcon.innerHTML = "";
     UI.quoteCard.classList.remove("has-og-bg");
-    UI.quoteCard.style.removeProperty("--og-image");
     UI.quoteCard.style.removeProperty("--og-image");
     currentOgImage = "";
     currentOgImageDataURL = "";
