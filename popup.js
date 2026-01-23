@@ -403,8 +403,12 @@ document.addEventListener("DOMContentLoaded", () => {
         hasNewData = true;
       }
       if (author !== undefined) {
-        currentAuthor = author || "";
-        hasNewData = Boolean(author) || hasNewData;
+        if (author) {
+          currentAuthor = author;
+          hasNewData = true;
+        } else if (!currentAuthor) {
+          currentAuthor = "";
+        }
       }
       if (ogImageUrl) {
         currentOgImage = ogImageUrl;
