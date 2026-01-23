@@ -85,11 +85,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     })
     .then((injectionResults) => {
       const pageContext = injectionResults?.[0]?.result ?? { author: null };
-      console.log("BlueQuote: image metadata", {
-        ogImage: pageContext.ogImageMetaUrl,
-        twitterImage: pageContext.twitterImageUrl,
-        selectedImage: pageContext.ogImageUrl,
-      });
       chrome.storage.local.set(
         {
           selectedQuote: info.selectionText,
@@ -101,7 +96,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         },
       );
     })
-    .catch((e) => console.log("BlueQuote: failed to fetch author", e));
+    .catch(() => undefined);
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -123,15 +118,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         author: null,
         selectedText: "",
       };
-      console.log("BlueQuote: image metadata", {
-        ogImage: pageContext.ogImageMetaUrl,
-        twitterImage: pageContext.twitterImageUrl,
-        selectedImage: pageContext.ogImageUrl,
-      });
       sendResponse(pageContext);
     })
     .catch((e) => {
-      console.log("BlueQuote: failed to probe page", e);
       sendResponse({ author: null, selectedText: "" });
     });
 

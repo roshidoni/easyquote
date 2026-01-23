@@ -45,9 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const value = (modeMultiplier - (Math.floor((wordCount - 1) / 15) + 1)) * 2;
     const fontSize = base + value;
     const lineHeight = isVerticalFormat ? 1.55 : 1.5;
-    console.log(
-      `fontSize: ${fontSize}, wordCount: ${wordCount}, value: ${value}`,
-    );
     return { fontSize, lineHeight: lineHeight.toFixed(2) };
   }
 
@@ -131,7 +128,6 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.quoteUrl.textContent = sourceUrl ? extractDomain(sourceUrl) : "";
 
     // Render Icon
-    console.log("Site Icon URL:", currentQuoteIcon);
     UI.quoteIcon.innerHTML = "";
     if (currentQuoteIcon) {
       const img = document.createElement("img");
@@ -171,7 +167,6 @@ document.addEventListener("DOMContentLoaded", () => {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error("Error converting image to data URL:", error);
       return null;
     }
   }
@@ -227,7 +222,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       return canvas;
     } catch (error) {
-      console.error("Canvas rendering error:", error);
       displayStatusMessage("Failed to generate image.", true);
       return null;
     }
@@ -393,7 +387,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Direct favicon retrieval from tab property
     if (tabs[0].favIconUrl) {
       currentQuoteIcon = tabs[0].favIconUrl;
-      console.log("Favicon URL from tab:", currentQuoteIcon);
     }
 
     onQuoteInputChange();
