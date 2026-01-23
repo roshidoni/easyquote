@@ -1,11 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap");
 
 :root {
-    --bg-primary: #0a0e17;
+    --bg-primary: #151c2b;
     --bg-secondary: #111827;
     --bg-card: rgba(17, 24, 39, 0.8);
-    --bg-input: rgba(255, 255, 255, 0.04);
-    --bg-hover: rgba(255, 255, 255, 0.06);
+    --bg-input: rgba(255, 255, 255, 0.07);
+    --bg-hover: rgba(255, 255, 255, 0.1);
 
     --border: rgba(255, 255, 255, 0.08);
     --border-focus: rgba(99, 179, 237, 0.5);
@@ -241,8 +241,7 @@ body {
     position: relative;
 }
 
-.input-wrapper textarea,
-.input-wrapper input {
+.input-wrapper textarea {
     width: 100%;
     padding: 14px 16px;
     font-size: 14px;
@@ -265,8 +264,7 @@ body {
     border-color: rgba(255, 255, 255, 0.12);
 }
 
-.input-wrapper textarea:focus,
-.input-wrapper input:focus {
+.input-wrapper textarea:focus {
     background: var(--bg-hover);
     border-color: var(--border-focus);
     box-shadow: 0 0 0 3px var(--accent-glow);
@@ -300,17 +298,6 @@ body {
     background-clip: padding-box;
 }
 
-.input-wrapper input[readonly] {
-    color: var(--text-muted);
-    cursor: default;
-}
-
-.input-wrapper input[readonly]:hover,
-.input-wrapper input[readonly]:focus {
-    background: var(--bg-input);
-    border-color: var(--border);
-    box-shadow: none;
-}
 
 /* Word Count */
 .word-count {
