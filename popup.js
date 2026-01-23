@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     statusMessage: document.getElementById("status"),
     formatInputs: document.querySelectorAll('input[name="format"]'),
     quoteIcon: document.getElementById("quoteIcon"),
-    backgroundToggle: document.getElementById("backgroundToggle"),
     backgroundButtons: document.querySelectorAll(".bg-toggle-btn"),
   };
 
