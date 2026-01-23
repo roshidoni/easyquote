@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   let currentQuoteIcon = null;
+  let renderedQuoteIcon = null; // Track what's currently rendered
   let currentAuthor = "";
   let currentUrl = "";
   let currentOgImage = "";
@@ -135,16 +136,17 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.quoteAuthor.classList.toggle("hidden", !authorName);
     UI.quoteUrl.textContent = sourceUrl ? extractDomain(sourceUrl) : "";
 
-    // Render Icon
-    UI.quoteIcon.innerHTML = "";
-    if (currentQuoteIcon) {
-      const img = document.createElement("img");
-      img.src = currentQuoteIcon;
-      img.alt = "";
-      UI.quoteIcon.appendChild(img);
+    // Render Icon (only if changed)
+    if (currentQuoteIcon !== renderedQuoteIcon) {
+      UI.quoteIcon.innerHTML = "";
+      if (currentQuoteIcon) {
+        const img = document.createElement("img");
+        img.src = currentQuoteIcon;
+        img.alt = "";
+        UI.quoteIcon.appendChild(img);
+      }
+      renderedQuoteIcon = currentQuoteIcon;
     }
-
-    updateBackgroundToggle();
 
     const canUseImageBackground = isSelectionQuote && currentOgImage;
     const useImageBackground = canUseImageBackground && backgroundMode === "image";
@@ -185,6 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.quoteAuthor.classList.add("hidden");
     UI.quoteUrl.textContent = "";
     UI.quoteIcon.innerHTML = "";
+    renderedQuoteIcon = null;
     UI.quoteCard.classList.remove("has-og-bg");
     UI.quoteCard.style.removeProperty("--og-image");
     currentOgImage = "";
@@ -345,10 +348,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const mode = button.dataset.mode;
       const canUseImageBackground = isSelectionQuote && currentOgImage;
       if (mode === "image" && !canUseImageBackground) return;
+      if (backgroundMode === mode) return; // No change needed
       backgroundMode = mode;
       updateBackgroundToggle();
+      // Only re-render if we need to update the background image
       if (!UI.resultDiv.classList.contains("hidden")) {
-        renderQuoteCard();
+        // Directly update background instead of full re-render
+        const useImageBackground = canUseImageBackground && mode === "image";
+        UI.quoteCard.classList.toggle("has-og-bg", useImageBackground);
+        if (useImageBackground) {
+          const imageUrl = currentOgImageDataURL || currentOgImage;
+          UI.quoteCard.style.setProperty("--og-image", `url("${imageUrl}")`);
+        } else {
+          UI.quoteCard.style.removeProperty("--og-image");
+        }
       }
     });
   });
@@ -376,7 +389,8 @@ document.addEventListener("DOMContentLoaded", () => {
         isSelectionQuote = true;
         backgroundMode = "dark";
         updateBackgroundToggle();
-        onQuoteInputChange();
+        renderQuoteCard(); // Single render after all state is set
+        updateWordCountDisplay();
         chrome.storage.local.remove([
           "selectedQuote",
           "selectedAuthor",
@@ -396,7 +410,11 @@ document.addEventListener("DOMContentLoaded", () => {
       currentQuoteIcon = tabs[0].favIconUrl;
     }
 
-    onQuoteInputChange();
+    // Initial render with tab data
+    if (UI.quoteInput.value.trim()) {
+      renderQuoteCard();
+      updateWordCountDisplay();
+    }
 
     chrome.runtime.sendMessage({ action: "getPageContext" }, (response) => {
       if (chrome.runtime.lastError) return;
@@ -421,7 +439,11 @@ document.addEventListener("DOMContentLoaded", () => {
         currentOgImage = ogImageUrl;
         convertImageToDataURL(ogImageUrl).then((dataUrl) => {
           currentOgImageDataURL = dataUrl;
-          if (backgroundMode === "image") renderQuoteCard();
+          // Only re-render if background mode is image and card is visible
+          if (backgroundMode === "image" && !UI.resultDiv.classList.contains("hidden")) {
+            const imageUrl = dataUrl || currentOgImage;
+            UI.quoteCard.style.setProperty("--og-image", `url("${imageUrl}")`);
+          }
         });
         hasNewData = true;
       }
@@ -431,7 +453,11 @@ document.addEventListener("DOMContentLoaded", () => {
         updateBackgroundToggle();
       }
 
-      if (hasNewData) onQuoteInputChange();
+      // Single render after all state is collected
+      if (hasNewData) {
+        renderQuoteCard();
+        updateWordCountDisplay();
+      }
     });
   });
 });
