@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let renderedQuoteIcon = null; // Track what's currently rendered
   let currentAuthor = "";
   let currentUrl = "";
+  let currentTitle = "";
   let currentOgImage = "";
   let currentOgImageDataURL = "";
   let isSelectionQuote = false;
@@ -32,6 +33,17 @@ document.addEventListener("DOMContentLoaded", () => {
     text.split(/\s+/).filter((w) => w.length > 0).length;
 
   const extractDomain = (url) => url.replace(/^(https?:\/\/)?(www\.)?/i, "");
+
+  function sanitizeFilenameBase(rawTitle) {
+    const cleaned = (rawTitle || "")
+      .trim()
+      .replace(/[\\/?%*:|"<>]/g, "-")
+      .replace(/[\s-]+/g, "-")
+      .replace(/^[\s.-]+|[\s.-]+$/g, "")
+      .slice(0, 120);
+
+    return cleaned || "untitled-quote";
+  }
 
   function truncateTextByWordLimit(text, maxWords) {
     const words = text.split(/\s+/).filter((w) => w.length > 0);
@@ -250,7 +262,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const blobUrl = URL.createObjectURL(blob);
         const downloadLink = document.createElement("a");
-        downloadLink.download = "bluequote.jpeg";
+        const filenameBase = sanitizeFilenameBase(currentTitle);
+        downloadLink.download = `${filenameBase}.jpeg`;
         downloadLink.href = blobUrl;
         downloadLink.click();
         URL.revokeObjectURL(blobUrl);
@@ -404,6 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs[0]) return;
     currentUrl = tabs[0].url || "";
+    currentTitle = tabs[0].title || "";
 
     // Direct favicon retrieval from tab property
     if (tabs[0].favIconUrl) {
